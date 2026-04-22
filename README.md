@@ -7,6 +7,8 @@
 
 A minimal, reproducible MLOps-style batch job that loads real OHLCV market data, computes a rolling-mean trading signal, and emits structured metrics — runnable locally or inside Docker in one command.
 
+**[🔴 Live Demo — View Pipeline Output Visualization](https://ashish-doing.github.io/mlops-signal-pipeline/dashboard_demo.html)**
+
 ---
 
 ## What it does
@@ -21,7 +23,7 @@ data.csv (10,000 rows OHLCV)
 │  1. Load + validate config.yaml                 │
 │  2. Load + validate data.csv                    │
 │  3. Rolling mean on close (window=5)            │
-│  4. Binary signal: 1 if close > mean, else 0   │
+│  4. Binary signal: 1 if close > mean, else 0    │
 │  5. Compute metrics + latency                   │
 └─────────────────────────────────────────────────┘
     │                    │
@@ -47,7 +49,7 @@ metrics.json           run.log
 | Bearish signals | 5,007 |
 | Latency | 19ms |
 | Seed | 42 |
-| Status | success |
+| Status | ✅ success |
 
 ---
 
@@ -55,13 +57,14 @@ metrics.json           run.log
 
 ```
 .
-├── run.py            # Main pipeline
-├── config.yaml       # Seed, window, version
-├── data.csv          # 10,000-row OHLCV dataset (BTC/USD, 1-min)
-├── requirements.txt
-├── Dockerfile
-├── metrics.json      # Sample output (successful run)
-├── run.log           # Sample log (successful run)
+├── run.py                # Main pipeline
+├── config.yaml           # Seed, window, version
+├── data.csv              # 10,000-row OHLCV dataset (BTC/USD, 1-min)
+├── requirements.txt      # Python dependencies
+├── Dockerfile            # One-command Docker build
+├── metrics.json          # Sample output (successful run)
+├── run.log               # Sample log (successful run)
+├── dashboard_demo.html   # Visual demo of pipeline output
 └── README.md
 ```
 
@@ -170,8 +173,6 @@ version: "v1"
 ---
 
 ## Validation & error handling
-
-The pipeline handles all failure cases and always writes `metrics.json`:
 
 | Case | Behaviour |
 |------|-----------|
