@@ -7,7 +7,7 @@
 
 A minimal, reproducible MLOps-style batch job that loads real OHLCV market data, computes a rolling-mean trading signal, and emits structured metrics — runnable locally or inside Docker in one command.
 
-**[🔴 Live Demo — View Pipeline Output Visualization](https://ashish-doing.github.io/mlops-signal-pipeline/dashboard_demo.html)**
+**🔴 [Live Demo — View Pipeline Output Visualization](https://ashish-doing.github.io/mlops-signal-pipeline/dashboard_demo.html)**
 
 ---
 
