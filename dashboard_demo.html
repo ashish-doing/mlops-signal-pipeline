@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MLOps Signal Pipeline Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, sans-serif; background: #0f1117; color: #e2e8f0; padding: 24px; }
+h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+.badge { display: inline-block; background: #14532d; color: #4ade80; font-size: 11px; padding: 2px 10px; border-radius: 99px; margin-left: 10px; vertical-align: middle; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.card { background: #1e2130; border-radius: 10px; padding: 14px 16px; border: 0.5px solid #2d3148; }
+.card-label { font-size: 11px; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.card-value { font-size: 24px; font-weight: 500; color: #e2e8f0; }
+.card-sub { font-size: 11px; color: #475569; margin-top: 3px; }
+.section { background: #1e2130; border: 0.5px solid #2d3148; border-radius: 12px; padding: 18px; margin-bottom: 12px; }
+.section-title { font-size: 12px; font-weight: 500; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; }
+.legend { display: flex; gap: 18px; font-size: 12px; color: #64748b; margin-bottom: 10px; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.legend-line { width: 18px; height: 2px; border-radius: 2px; }
+.log-wrap { font-family: 'Courier New', monospace; font-size: 12px; line-height: 2; }
+.log-line { display: flex; gap: 14px; border-bottom: 0.5px solid #2d3148; padding: 2px 0; }
+.log-line:last-child { border-bottom: none; }
+.log-time { color: #475569; min-width: 76px; }
+.log-tag-info { color: #60a5fa; min-width: 48px; }
+.log-tag-ok { color: #4ade80; min-width: 48px; }
+.log-msg { color: #94a3b8; }
+.log-msg b { color: #e2e8f0; font-weight: 500; }
+pre { font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.9; color: #94a3b8; }
+.jk { color: #60a5fa; }
+.jv-s { color: #4ade80; }
+.jv-n { color: #fb923c; }
+.bar-wrap { display: flex; flex-direction: column; gap: 10px; }
+.bar-row { display: flex; align-items: center; gap: 12px; }
+.bar-label { font-size: 12px; color: #64748b; min-width: 90px; }
+.bar-track { flex: 1; background: #2d3148; border-radius: 3px; height: 8px; }
+.bar-fill { height: 8px; border-radius: 3px; }
+.bar-val { font-size: 13px; font-weight: 500; min-width: 52px; text-align: right; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+</style>
+</head>
+<body>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+  <h1>MLOps Signal Pipeline <span class="badge">status: success</span></h1>
+</div>
+<div class="sub">BTC/USD · 1-min OHLCV · 10,000 rows · seed=42 · window=5 · v1</div>
+
+<div class="grid">
+  <div class="card"><div class="card-label">rows processed</div><div class="card-value">10,000</div><div class="card-sub">all rows loaded</div></div>
+  <div class="card"><div class="card-label">signal rate</div><div class="card-value">49.91%</div><div class="card-sub">4,989 bullish signals</div></div>
+  <div class="card"><div class="card-label">latency</div><div class="card-value">19ms</div><div class="card-sub">end-to-end runtime</div></div>
+  <div class="card"><div class="card-label">version</div><div class="card-value">v1</div><div class="card-sub">seed 42 · window 5</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">close price vs rolling mean — first 120 rows</div>
+  <div class="legend">
+    <span><span class="legend-line" style="background:#378ADD;"></span>close price</span>
+    <span><span class="legend-line" style="background:#f97316;border-top:2px dashed #f97316;background:none;"></span>rolling mean (window=5)</span>
+    <span><span style="width:10px;height:10px;background:rgba(74,222,128,0.2);border-radius:2px;display:inline-block;"></span>signal = 1 (bullish)</span>
+    <span><span style="width:10px;height:10px;background:rgba(239,68,68,0.2);border-radius:2px;display:inline-block;"></span>signal = 0 (bearish)</span>
+  </div>
+  <div style="position:relative;width:100%;height:240px;">
+    <canvas id="priceChart" role="img" aria-label="Close price vs rolling mean with signal zones">BTC close price and rolling mean over 120 rows.</canvas>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="section">
+    <div class="section-title">signal distribution</div>
+    <div style="position:relative;height:160px;margin-bottom:14px;">
+      <canvas id="donut" role="img" aria-label="Donut chart: 49.91% bullish, 50.09% bearish">49.91% bullish, 50.09% bearish.</canvas>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-row">
+        <div class="bar-label">signal = 1</div>
+        <div class="bar-track"><div class="bar-fill" style="width:49.91%;background:#378ADD;"></div></div>
+        <div class="bar-val" style="color:#378ADD;">4,989</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">signal = 0</div>
+        <div class="bar-track"><div class="bar-fill" style="width:50.09%;background:#ef4444;"></div></div>
+        <div class="bar-val" style="color:#ef4444;">5,007</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">NaN (excluded)</div>
+        <div class="bar-track"><div class="bar-fill" style="width:0.04%;background:#475569;"></div></div>
+        <div class="bar-val" style="color:#475569;">4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">metrics.json output</div>
+    <pre>{
+  <span class="jk">"version"</span>:        <span class="jv-s">"v1"</span>,
+  <span class="jk">"rows_processed"</span>: <span class="jv-n">10000</span>,
+  <span class="jk">"metric"</span>:         <span class="jv-s">"signal_rate"</span>,
+  <span class="jk">"value"</span>:          <span class="jv-n">0.4991</span>,
+  <span class="jk">"latency_ms"</span>:     <span class="jv-n">19</span>,
+  <span class="jk">"seed"</span>:           <span class="jv-n">42</span>,
+  <span class="jk">"status"</span>:         <span class="jv-s">"success"</span>
+}</pre>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">run.log</div>
+  <div class="log-wrap">
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-info">[INFO]</span><span class="log-msg">=== Job start ===</span></div>
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-info">[INFO]</span><span class="log-msg">Config loaded — <b>seed=42</b>  <b>window=5</b>  <b>version=v1</b></span></div>
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-info">[INFO]</span><span class="log-msg">NumPy random seed set to <b>42</b></span></div>
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-info">[INFO]</span><span class="log-msg">Dataset loaded — <b>10,000 rows</b> · columns: timestamp, open, high, low, close, volume_btc, volume_usd</span></div>
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-info">[INFO]</span><span class="log-msg">Rolling mean computed (window=5) — <b>4 leading NaN rows</b> excluded from signal</span></div>
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-info">[INFO]</span><span class="log-msg">Signal generated — <b>9,996 valid rows</b>  |  signal_rate=<b>0.4991</b>  (1s: 4989  0s: 5007)</span></div>
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-info">[INFO]</span><span class="log-msg">Metrics — rows_processed=<b>10000</b>  signal_rate=<b>0.4991</b>  latency_ms=<b>19</b></span></div>
+    <div class="log-line"><span class="log-time">12:09:56</span><span class="log-tag-ok">[INFO]</span><span class="log-msg">=== Job complete — status: <b>success</b> ===</span></div>
+  </div>
+</div>
+
+<script>
+const N = 120;
+const prices = [];
+let p = 45000;
+function lcg(s) {
+  let state = s;
+  return function() {
+    state = (Math.imul(1664525, state) + 1013904223) | 0;
+    return (state >>> 0) / 4294967295;
+  };
+}
+const rng = lcg(42);
+for (let i = 0; i < N; i++) {
+  p += (rng() - 0.5) * 40;
+  prices.push(parseFloat(p.toFixed(2)));
+}
+const rolling = prices.map((_, i) => {
+  if (i < 4) return null;
+  return parseFloat((prices.slice(i-4,i+1).reduce((a,b)=>a+b,0)/5).toFixed(2));
+});
+
+const bullishBg = [], bearishBg = [];
+for (let i = 0; i < N; i++) {
+  if (rolling[i] === null) { bullishBg.push(null); bearishBg.push(null); continue; }
+  if (prices[i] > rolling[i]) { bullishBg.push(prices[i]); bearishBg.push(null); }
+  else { bullishBg.push(null); bearishBg.push(prices[i]); }
+}
+
+const minP = Math.min(...prices) - 20;
+
+new Chart(document.getElementById('priceChart'), {
+  type: 'bar',
+  data: {
+    labels: Array.from({length:N},(_,i)=>i),
+    datasets: [
+      {
+        type: 'bar', label: 'bullish zone',
+        data: bullishBg.map(v => v !== null ? [minP, v] : null),
+        backgroundColor: 'rgba(74,222,128,0.13)',
+        borderColor: 'transparent',
+        barPercentage: 1.0, categoryPercentage: 1.0, yAxisID: 'y'
+      },
+      {
+        type: 'bar', label: 'bearish zone',
+        data: bearishBg.map(v => v !== null ? [minP, v] : null),
+        backgroundColor: 'rgba(239,68,68,0.13)',
+        borderColor: 'transparent',
+        barPercentage: 1.0, categoryPercentage: 1.0, yAxisID: 'y'
+      },
+      {
+        type: 'line', label: 'close price',
+        data: prices, borderColor: '#378ADD', borderWidth: 2,
+        pointRadius: 0, tension: 0.3, yAxisID: 'y'
+      },
+      {
+        type: 'line', label: 'rolling mean',
+        data: rolling, borderColor: '#f97316', borderWidth: 1.5,
+        borderDash: [5,3], pointRadius: 0, tension: 0.3, yAxisID: 'y'
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            if (ctx.dataset.label === 'bullish zone' || ctx.dataset.label === 'bearish zone') return null;
+            return ctx.dataset.label + ': $' + (Array.isArray(ctx.raw) ? ctx.raw[1] : ctx.raw).toFixed(2);
+          }
+        }
+      }
+    },
+    scales: {
+      x: { display: false },
+      y: {
+        min: minP,
+        ticks: { color: '#475569', font: { size: 11 }, callback: v => '$' + v.toFixed(0) },
+        grid: { color: 'rgba(255,255,255,0.05)' }
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('donut'), {
+  type: 'doughnut',
+  data: {
+    labels: ['signal = 1 (bullish)', 'signal = 0 (bearish)'],
+    datasets: [{ data: [4989, 5007], backgroundColor: ['#378ADD','#ef4444'], borderWidth: 0, hoverOffset: 4 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed.toLocaleString() } }
+    },
+    cutout: '68%'
+  }
+});
+</script>
+</body>
+</html>
